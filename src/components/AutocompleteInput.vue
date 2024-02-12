@@ -55,17 +55,30 @@ const onChange = (event) => {
 
 const handleClickOutside = (event) => {
     if (!rootElement.value.contains(event.target)) {
-        isOpen.value = false;
+        isOpen.value = false
+        autocompleteElement.value.scrollTop = 0
+        highlightIndex.value = -1
     }
+}
+
+const onClickInput = (event) => {
+    const inputValue = event.target.value
+    results.value = props.items.filter(item => item.toLowerCase().indexOf(inputValue.toLowerCase()) > -1)
+    isOpen.value = inputValue.length > 0
 }
 
 const onArrowDown = () => {
     if (highlightIndex.value < results.value.length - 1) {
         highlightIndex.value = highlightIndex.value + 1
         const activedElement = autocompleteElement.value.getElementsByClassName("is-active")[0]
-        if (activedElement && activedElement.offsetTop > autocompleteElement.value.scrollTop) {
-            autocompleteElement.value.scrollTop = activedElement.offsetTop - activedElement.clientHeight
+        if (activedElement) {
+            const elementCount = Math.floor(autocompleteElement.value.clientHeight / activedElement.clientHeight)
+            const surplusOfElement = autocompleteElement.value.clientHeight % activedElement.clientHeight
+            if (highlightIndex.value >= elementCount) {
+                autocompleteElement.value.scrollTop = surplusOfElement + (highlightIndex.value - elementCount + 1) * activedElement.clientHeight
+            }
         }
+
     }
 }
 
@@ -98,6 +111,8 @@ onUnmounted(() => {
 watch(results, (value) => {
     if (value.length === 0) {
         isOpen.value = false
+    } else {
+
     }
 })
 
@@ -105,8 +120,9 @@ watch(results, (value) => {
 
 <template>
     <div class="autocomplete" ref="rootElement" :class="props.rootClasses">
-        <input type="text" :value="props.input" @input="onChange" @keydown.down.prevent="onArrowDown" @keydown.up.prevent="onArrowUp"
-            class="form-control" :class="props.inputClasses" @keydown.enter.prevent="onEnter" :ref="props.reference" />
+        <input type="text" :value="props.input" @input="onChange" @keydown.down.prevent="onArrowDown"
+            @keydown.up.prevent="onArrowUp" class="form-control" :class="props.inputClasses"
+            @keydown.enter.prevent="onEnter" :ref="props.reference" @click="onClickInput" />
         <ul class="autocomplete-results" v-show="isOpen" ref="autocompleteElement">
             <li v-for="(result, i) in results" :key="i" class="autocomplete-result" @click="() => setResult(result)"
                 :class="{ 'is-active': i === highlightIndex }">
@@ -128,7 +144,7 @@ watch(results, (value) => {
     border: 1px solid #eeeeee;
     height: auto;
     min-height: 1em;
-    max-height: 6em;
+    max-height: 10em;
     overflow: auto;
     position: absolute;
     z-index: 33;
